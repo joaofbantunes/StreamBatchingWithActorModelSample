@@ -6,7 +6,7 @@ using BatchItem = ProtoActorSimplified.Messages.BatchItem;
 
 namespace ProtoActorSimplified;
 
-public sealed class BatchAggregatorActor(IBatchRepository batchRepository) : IActor
+public sealed class BatchAggregatorActor(IBatchRepository batchRepository, ILogger<BatchAggregatorActor> logger) : IActor
 {
     private static readonly Ack Ack = new();
     private static readonly TimeSpan ReceiveTimeout = TimeSpan.FromSeconds(30);
@@ -25,6 +25,7 @@ public sealed class BatchAggregatorActor(IBatchRepository batchRepository) : IAc
             //BatchItem item => OnBatchItem(context, item),
             Persist _ => OnPersist(context),
             ReceiveTimeout _ => OnReceiveTimeout(context),
+            Stopping _ => OnStopping(context),
             _ => Task.CompletedTask
         };
 
@@ -116,6 +117,12 @@ public sealed class BatchAggregatorActor(IBatchRepository batchRepository) : IAc
     private Task OnReceiveTimeout(IContext context)
     {
         context.Poison(context.Self);
+        return Task.CompletedTask;
+    }
+    
+    private Task OnStopping(IContext context)
+    {
+        logger.LogInformation("Stopping actor of batch {BatchId}", _batchId);
         return Task.CompletedTask;
     }
 }

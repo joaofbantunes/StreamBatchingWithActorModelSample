@@ -13,7 +13,6 @@ using Shared.Persistence;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Logging.AddSimpleConsole(options => { options.TimestampFormat = "HH:mm:ss"; });
-Proto.Log.SetLoggerFactory(LoggerFactory.Create(l => l.AddConsole().SetMinimumLevel(LogLevel.Information)));
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.Configure<MongoBatchRepository.Settings>(builder.Configuration.GetSection("MongoDb"));
 builder.Services.AddSingleton<MongoBatchRepository>();
@@ -25,6 +24,7 @@ builder.Services.AddHostedService<ActorSystemHostedService>();
 builder.Services.AddHostedService<KafkaConsumerHostedService>();
 
 var app = builder.Build();
+Proto.Log.SetLoggerFactory(app.Services.GetRequiredService<ILoggerFactory>());
 
 app.MapGet("/", () => "Hello World!");
 
