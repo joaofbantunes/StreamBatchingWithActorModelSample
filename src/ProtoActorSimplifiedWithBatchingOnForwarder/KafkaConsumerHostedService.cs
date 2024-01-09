@@ -1,9 +1,9 @@
 using Confluent.Kafka;
 using Proto;
 using Proto.Cluster;
-using ProtoActorSimplified.Messages;
+using ProtoActorSimplifiedWithBatchingOnForwarder.Messages;
 
-namespace ProtoActorSimplified;
+namespace ProtoActorSimplifiedWithBatchingOnForwarder;
 
 public sealed class KafkaConsumerHostedService(
     ActorSystem system,
@@ -24,7 +24,7 @@ public sealed class KafkaConsumerHostedService(
         var config = new ConsumerConfig
         {
             BootstrapServers = "localhost:9092",
-            GroupId = "proto-actor-simplified",
+            GroupId = "proto-actor-simplified2",
             AutoOffsetReset = AutoOffsetReset.Earliest,
             EnableAutoCommit = false
         };
@@ -48,56 +48,64 @@ public sealed class KafkaConsumerHostedService(
                 await Task.Delay(TimeToSleepWhenNoRecords, stoppingToken);
                 continue;
             }
-
-            logger.LogInformation("Polled {BatchSize} records from Kafka", items.Count);
+            
+            logger.LogInformation("Polled {PolledItemCount} records from Kafka", items.Sum(i => i.Items.Count));
             var pendingItems = items
                 .Select(item => system.Cluster().RequestAsync<Ack>(
-                    item.GroupId,
+                    item.Id,
                     "group-aggregator",
                     item,
                     CancellationTokens.WithTimeout(BatchHandlingTimeout)));
             await Task.WhenAll(pendingItems);
 
-            var groupIds = items.Select(static item => item.GroupId).Distinct().ToArray();
-            logger.LogInformation("Persisting {Groups} groups", groupIds.Length);
-            var persistMessage = new Persist();
-            var pendingPersists = groupIds
-                .Select(groupId => system.Cluster().RequestAsync<Ack>(
-                    groupId,
-                    "group-aggregator",
-                    persistMessage,
-                    CancellationTokens.WithTimeout(BatchHandlingTimeout)));
-            await Task.WhenAll(pendingPersists);
-
             consumer.Commit();
         }
     }
 
-    private IReadOnlyCollection<Item> GetBatchFromKafka(IConsumer<Guid, Shared.Messages.Item> consumer)
+    private IReadOnlyCollection<Batch> GetBatchFromKafka(IConsumer<Guid, Shared.Messages.Item> consumer)
     {
-        var polled = new List<Item>(MaxPollBatchSize);
-        var remainingTimeout = KafkaPollTimeout;
-
-        while (polled.Count < MaxPollBatchSize && remainingTimeout > TimeSpan.Zero)
+        var pollingStarted = timeProvider.GetTimestamp();
+        try
         {
-            var startTime = timeProvider.GetTimestamp();
-            var message = consumer.Consume(remainingTimeout);
-            if (message != null)
+            var polled = new List<Shared.Messages.Item>(MaxPollBatchSize);
+            var remainingTimeout = KafkaPollTimeout;
+
+            while (polled.Count < MaxPollBatchSize && remainingTimeout > TimeSpan.Zero)
             {
-                polled.Add(Map(message.Message.Value));
+                var startTime = timeProvider.GetTimestamp();
+                var message = consumer.Consume(remainingTimeout);
+                if (message != null)
+                {
+                    polled.Add(message.Message.Value);
+                }
+
+                remainingTimeout = remainingTimeout.Subtract(timeProvider.GetElapsedTime(startTime));
             }
 
-            remainingTimeout = remainingTimeout.Subtract(timeProvider.GetElapsedTime(startTime));
+            return polled
+                .GroupBy(i => i.GroupingId)
+                .Select(g =>
+                {
+                    var batch = new Batch
+                    {
+                        Id = g.Key.ToString()
+                    };
+                    batch.Items.AddRange(g.Select(Map));
+                    return batch;
+                }).ToArray();
+        }
+        finally
+        {
+            logger.LogDebug(
+                "Spent {TimeSpent}s polling Kafka",
+                timeProvider.GetElapsedTime(pollingStarted).TotalSeconds);
         }
 
-        return polled;
+        static BatchItem Map(Shared.Messages.Item item)
+            => new()
+            {
+                Id = item.Id.ToString(),
+                Stuff = item.Stuff
+            };
     }
-
-    private static Item Map(Shared.Messages.Item item)
-        => new()
-        {
-            GroupId = item.GroupingId.ToString(),
-            Id = item.Id.ToString(),
-            Stuff = item.Stuff
-        };
 }

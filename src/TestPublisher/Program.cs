@@ -3,49 +3,50 @@ using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 using Shared.Messages;
 
-var topicName = "sample-batch-topic";
+var topicName = "sample-streaming-topic";
 var bootstrapServers = "localhost:9092";
 
-using var producer = new ProducerBuilder<Guid, BatchItem>(
+using var producer = new ProducerBuilder<Guid, Item>(
         new ProducerConfig
         {
             BootstrapServers = bootstrapServers
         })
     .SetKeySerializer(GuidSerializer.Instance)
-    .SetValueSerializer(JsonMessageSerializer<BatchItem>.Instance)
+    .SetValueSerializer(JsonMessageSerializer<Item>.Instance)
     .Build();
 
 await CreateTopicAsync(topicName, bootstrapServers);
 
-var batches = Enumerable
+var groupings = Enumerable
     .Range(0, 100)
+    //.Range(0, 1)
     .Select(_ => (Id: Guid.NewGuid(), Size: Random.Shared.Next(300, 3000)));
 
-var publishTasks = batches
-    .Select(batch => PublishBatchAsync(producer, batch.Id, batch.Size));
+var publishTasks = groupings
+    .Select(group => PublishGroupAsync(producer, topicName, group.Id, group.Size));
 
 await Task.WhenAll(publishTasks);
 
-static async Task PublishBatchAsync(IProducer<Guid, BatchItem> producer, Guid batchId, int batchSize)
+static async Task PublishGroupAsync(IProducer<Guid, Item> producer, string topicName, Guid groupId, int size)
 {
-    await Task.Yield();
-    
     var faker = new Faker();
-    var batchItems = Enumerable
-        .Range(0, batchSize)
-        .Select(_ => new BatchItem(new (batchId, batchSize), Guid.NewGuid(), faker.Hacker.Verb()));
+    var items = Enumerable
+        .Range(0, size)
+        .Select(_ => new Item(groupId, Guid.NewGuid(), faker.Hacker.Verb()));
 
-    var chunks = batchItems.Chunk(100);
+    var chunks = items.Chunk(100);
     foreach (var chunk in chunks)
     {
-        foreach (var batchItem in chunk)
+        await Task.Yield();
+        
+        foreach (var item in chunk)
         {
             producer.Produce(
-                "sample-batch-topic",
-                new Message<Guid, BatchItem>
+                topicName,
+                new Message<Guid, Item>
                 {
-                    Key = batchItem.BatchInfo.Id,
-                    Value = batchItem
+                    Key = groupId,
+                    Value = item
                 });
         }
 

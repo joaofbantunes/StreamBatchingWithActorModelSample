@@ -1,12 +1,11 @@
+using Akka.Actor;
+using Akka.Hosting;
 using Confluent.Kafka;
-using Proto;
-using Proto.Cluster;
-using ProtoActorSimplified.Messages;
 
-namespace ProtoActorSimplified;
+namespace AkkaDotNetSimplified;
 
 public sealed class KafkaConsumerHostedService(
-    ActorSystem system,
+    IRequiredActor<Distributor> distributor,
     TimeProvider timeProvider,
     ILogger<KafkaConsumerHostedService> logger)
     : BackgroundService
@@ -50,23 +49,21 @@ public sealed class KafkaConsumerHostedService(
             }
 
             logger.LogInformation("Polled {BatchSize} records from Kafka", items.Count);
+
             var pendingItems = items
-                .Select(item => system.Cluster().RequestAsync<Ack>(
-                    item.GroupId,
-                    "group-aggregator",
+                .Select(item => distributor.ActorRef.Ask<Ack>(
                     item,
-                    CancellationTokens.WithTimeout(BatchHandlingTimeout)));
+                    BatchHandlingTimeout,
+                    stoppingToken));
             await Task.WhenAll(pendingItems);
 
             var groupIds = items.Select(static item => item.GroupId).Distinct().ToArray();
             logger.LogInformation("Persisting {Groups} groups", groupIds.Length);
-            var persistMessage = new Persist();
             var pendingPersists = groupIds
-                .Select(groupId => system.Cluster().RequestAsync<Ack>(
-                    groupId,
-                    "group-aggregator",
-                    persistMessage,
-                    CancellationTokens.WithTimeout(BatchHandlingTimeout)));
+                .Select(groupId => distributor.ActorRef.Ask<Ack>(
+                    new Persist(groupId),
+                    BatchHandlingTimeout,
+                    stoppingToken));
             await Task.WhenAll(pendingPersists);
 
             consumer.Commit();
@@ -94,10 +91,5 @@ public sealed class KafkaConsumerHostedService(
     }
 
     private static Item Map(Shared.Messages.Item item)
-        => new()
-        {
-            GroupId = item.GroupingId.ToString(),
-            Id = item.Id.ToString(),
-            Stuff = item.Stuff
-        };
+        => new(item.GroupingId, item.Id, item.Stuff);
 }

@@ -1,0 +1,18 @@
+syntax = "proto3";
+package messages;
+option csharp_namespace = "ProtoActorSimplifiedWithBatchingOnForwarder.Messages";
+
+// instead of forwarding one item to the actor at a time, we can group them in chunks 
+
+message Batch {
+  string Id = 1;
+  repeated BatchItem items = 2;
+}
+
+message BatchItem {
+  string Id = 1;
+  string stuff = 2;
+}
+
+// Confirm completion of an operation
+message Ack {}

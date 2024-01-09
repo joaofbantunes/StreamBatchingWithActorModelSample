@@ -2,11 +2,11 @@ using Microsoft.Extensions.Hosting;
 
 namespace Shared.Persistence;
 
-public sealed class DatabaseInitializerHostedService(MongoBatchRepository batchRepository) : IHostedService
+public sealed class DatabaseInitializerHostedService(MongoGroupItemRepository groupItemRepository) : IHostedService
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        await batchRepository.InitializeDatabaseAsync(cancellationToken);
+        await groupItemRepository.InitializeDatabaseAsync(cancellationToken);
     }
 
     // no-op

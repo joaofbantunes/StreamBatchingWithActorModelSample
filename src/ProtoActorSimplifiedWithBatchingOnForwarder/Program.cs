@@ -9,8 +9,8 @@ using Proto.Cluster.Testing;
 using Proto.DependencyInjection;
 using Proto.Remote;
 using Proto.Remote.GrpcNet;
-using ProtoActorSimplified;
-using ProtoActorSimplified.Messages;
+using ProtoActorSimplifiedWithBatchingOnForwarder.Messages;
+using ProtoActorSimplifiedWithBatchingOnForwarder;
 using Shared.Persistence;
 
 BsonDefaults.GuidRepresentationMode = GuidRepresentationMode.V3;
