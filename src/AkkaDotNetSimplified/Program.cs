@@ -23,8 +23,8 @@ builder.Services.AddAkka(
     {
         b.WithActors((system, registry) =>
         {
-            var distributor = system.ActorOf(Props.Create<DistributorActor>());
-            registry.TryRegister<Distributor>(distributor);
+            var distributor = system.ActorOf(Props.Create<AggregatorDirectoryActor>());
+            registry.TryRegister<AggregatorDirectory>(distributor);
         });
     });
 builder.Services.AddHostedService<KafkaConsumerHostedService>();

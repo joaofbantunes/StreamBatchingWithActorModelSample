@@ -5,7 +5,7 @@ using Confluent.Kafka;
 namespace AkkaDotNetSimplified;
 
 public sealed class KafkaConsumerHostedService(
-    IRequiredActor<Distributor> distributor,
+    IRequiredActor<AggregatorDirectory> distributor,
     TimeProvider timeProvider,
     ILogger<KafkaConsumerHostedService> logger)
     : BackgroundService
@@ -50,17 +50,27 @@ public sealed class KafkaConsumerHostedService(
 
             logger.LogInformation("Polled {BatchSize} records from Kafka", items.Count);
 
+            var groupedItems = items
+                .GroupBy(item => item.GroupId)
+                .ToDictionary(group => group.Key, group => group.ToArray());
+            
+            var aggregators = (await distributor.ActorRef.Ask<LookupResult>(
+                new LookupAggregator(groupedItems.Keys),
+                BatchHandlingTimeout,
+                stoppingToken)).Aggregators;
+            
             var pendingItems = items
-                .Select(item => distributor.ActorRef.Ask<Ack>(
+                .Select(item => aggregators[item.GroupId].Ask<Ack>(
                     item,
                     BatchHandlingTimeout,
                     stoppingToken));
+            
             await Task.WhenAll(pendingItems);
 
             var groupIds = items.Select(static item => item.GroupId).Distinct().ToArray();
             logger.LogInformation("Persisting {Groups} groups", groupIds.Length);
             var pendingPersists = groupIds
-                .Select(groupId => distributor.ActorRef.Ask<Ack>(
+                .Select(groupId => aggregators[groupId].Ask<Ack>(
                     new Persist(groupId),
                     BatchHandlingTimeout,
                     stoppingToken));
