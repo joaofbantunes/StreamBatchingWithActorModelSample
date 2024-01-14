@@ -39,17 +39,21 @@ app.Run();
 static ActorSystem CreateActorSystem(IServiceProvider services)
 {
     var configuration = services.GetRequiredService<IConfiguration>();
+    var runningInKubernetes = configuration.GetValue<bool>("RunningInKubernetes");
     var clusterName = "ProtoActorSimplifiedCluster";
     var systemConfig = ActorSystemConfig.Setup().WithDeveloperSupervisionLogging(true);
     var system = new ActorSystem(systemConfig).WithServiceProvider(services);
-    var remoteConfig = GrpcNetRemoteConfig
-        .BindToLocalhost()
-        //   .WithAdvertisedHost("the hostname or ip of this pod")
-        .WithProtoMessages(MessagesReflection.Descriptor);
+    var remoteConfig = runningInKubernetes
+        ? GrpcNetRemoteConfig
+            .BindToAllInterfaces(advertisedHost: configuration["ProtoActor:AdvertisedHost"])
+            .WithProtoMessages(MessagesReflection.Descriptor)
+        : GrpcNetRemoteConfig
+            .BindToLocalhost()
+            .WithProtoMessages(MessagesReflection.Descriptor);
 
     var clusterConfig = ClusterConfig
         .Setup(clusterName,
-            configuration.GetValue<bool>("RunningInKubernetes")
+            runningInKubernetes
                 ? new KubernetesProvider()
                 : new TestProvider(new TestProviderOptions(), new InMemAgent()),
             new PartitionIdentityLookup())
@@ -61,7 +65,9 @@ static ActorSystem CreateActorSystem(IServiceProvider services)
                         .PropsFor<AggregatorActor>()
                         // making it a bit longer, but if we need more, maybe the state needs to be loaded elsewhere (or optimized, if possible)
                         .WithStartDeadline(TimeSpan.FromSeconds(1)))
-                .WithLocalAffinityRelocationStrategy());
+                // use local affinity only when the Kafka keys are well defined, and all related messages are sent to the same partition
+                .WithLocalAffinityRelocationStrategy()
+        );
 
     return system
         .WithRemote(remoteConfig)

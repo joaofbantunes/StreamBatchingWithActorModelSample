@@ -28,7 +28,7 @@ public sealed class MongoGroupItemRepository : IGroupItemRepository
 
     public async Task SaveProgressAsync(Group group, IEnumerable<GroupItem> groupItems, CancellationToken ct)
     {
-        await _groupCollection.FindOneAndReplaceAsync<Group>(
+        await _groupCollection.FindOneAndReplaceAsync(
             new FilterDefinitionBuilder<Group>().Eq(g => g.Id, group.Id),
             group,
             new FindOneAndReplaceOptions<Group> { IsUpsert = true },

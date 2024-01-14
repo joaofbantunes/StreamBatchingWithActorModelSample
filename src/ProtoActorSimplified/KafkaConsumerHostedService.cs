@@ -8,6 +8,7 @@ namespace ProtoActorSimplified;
 public sealed class KafkaConsumerHostedService(
     ActorSystem system,
     TimeProvider timeProvider,
+    IConfiguration configuration,
     ILogger<KafkaConsumerHostedService> logger)
     : BackgroundService
 {
@@ -23,7 +24,7 @@ public sealed class KafkaConsumerHostedService(
 
         var config = new ConsumerConfig
         {
-            BootstrapServers = "localhost:9092",
+            BootstrapServers = configuration.GetSection("Kafka")["BootstrapServers"],
             GroupId = "proto-actor-simplified",
             AutoOffsetReset = AutoOffsetReset.Earliest,
             EnableAutoCommit = false
@@ -43,7 +44,8 @@ public sealed class KafkaConsumerHostedService(
 
             if (items.Count == 0)
             {
-                logger.LogDebug("No records polled from Kafka, sleeping for {TimeToSleepWhenNoRecords}",
+                logger.LogDebug(
+                    "No records polled from Kafka, sleeping for {TimeToSleepWhenNoRecords}",
                     TimeToSleepWhenNoRecords);
                 await Task.Delay(TimeToSleepWhenNoRecords, stoppingToken);
                 continue;

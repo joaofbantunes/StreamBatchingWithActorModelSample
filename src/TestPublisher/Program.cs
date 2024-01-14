@@ -5,6 +5,7 @@ using Shared.Messages;
 
 var topicName = "sample-streaming-topic";
 var bootstrapServers = "localhost:9092";
+//var bootstrapServers = "localhost:9192"; // testing with local k8s cluster
 
 using var producer = new ProducerBuilder<Guid, Item>(
         new ProducerConfig
@@ -45,6 +46,8 @@ static async Task PublishGroupAsync(IProducer<Guid, Item> producer, string topic
                 topicName,
                 new Message<Guid, Item>
                 {
+                    // to mess things up, but given we have a actor system cluster, a single actor will handle all messages with the group id
+                    //Key = Guid.NewGuid(),
                     Key = groupId,
                     Value = item
                 });

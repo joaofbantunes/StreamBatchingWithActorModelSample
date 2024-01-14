@@ -1,0 +1,89 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: sample-role-with-access-for-clustering
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+      - watch
+      - patch
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sample-service-account-with-access-for-clustering
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: sample-role-binding-with-access-for-clustering
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: sample-role-with-access-for-clustering
+subjects:
+  - kind: ServiceAccount
+    name: sample-service-account-with-access-for-clustering
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: protoactorsimplifiedwithbatchingonforwarder-deployment
+  labels:
+    app: protoactorsimplifiedwithbatchingonforwarder
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: protoactorsimplifiedwithbatchingonforwarder
+  template:
+    metadata:
+      labels:
+        app: protoactorsimplifiedwithbatchingonforwarder
+    spec:
+      serviceAccountName: sample-service-account-with-access-for-clustering
+      containers:
+        - name: protoactorsimplifiedwithbatchingonforwarder
+          image: streambatchingwithactormodelsample/protoactorsimplifiedwithbatchingonforwarder:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          env:
+            - name: MongoDb__ConnectionString
+              value: "mongodb://user:pass@mongo-svc:27017/"
+            - name: MongoDb__DatabaseName
+              value: "stream-batching-proto-actor-simplified2"
+            - name: Kafka__BootstrapServers
+              value: "kafka-svc:9092"
+            - name: RunningInKubernetes
+              value: "true"
+            - name: ProtoActor__AdvertisedHost
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: protoactorsimplifiedwithbatchingonforwarder-svc
+spec:
+  type: LoadBalancer
+  selector:
+    app: protoactorsimplifiedwithbatchingonforwarder
+  ports:
+    - protocol: TCP
+      port: 6001
+      targetPort: http
