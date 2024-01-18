@@ -59,7 +59,7 @@ public sealed class AggregatorActor : ReceiveActor
             await _groupItemRepository.SaveProgressAsync(
                 new Group(_groupId),
                 _persistableItems.Select(
-                    i => new Shared.Persistence.GroupItem(_groupId, i.Id, i.Stuff)),
+                    i => new GroupItem(_groupId, i.Id, i.Stuff)),
                 CancellationToken.None);
 
             _persistableItems.Clear();
