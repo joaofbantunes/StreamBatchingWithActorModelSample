@@ -1,10 +1,9 @@
 using Proto;
 using Proto.Cluster;
-using ProtoActorSimplified.Messages;
+using ProtoActorWithBatchingOnForwarder.Messages;
 using Shared.Persistence;
-using Item = ProtoActorSimplified.Messages.Item;
 
-namespace ProtoActorSimplified;
+namespace ProtoActorWithBatchingOnForwarder;
 
 public sealed class AggregatorActor(IGroupItemRepository groupItemRepository, ILogger<AggregatorActor> logger) : IActor
 {
@@ -14,14 +13,12 @@ public sealed class AggregatorActor(IGroupItemRepository groupItemRepository, IL
     // initialized on startup
     private Guid _groupId;
     private HashSet<string> _handledItems = new();
-    private List<Item> _persistableItems = new();
 
     public Task ReceiveAsync(IContext context)
         => context.Message switch
         {
             Started _ => OnStarted(context),
-            Item item => OnItem(context, item),
-            Persist _ => OnPersist(context),
+            Batch batch => OnBatch(context, batch),
             ReceiveTimeout _ => OnReceiveTimeout(context),
             Stopping _ => OnStopping(context),
             _ => Task.CompletedTask
@@ -43,29 +40,23 @@ public sealed class AggregatorActor(IGroupItemRepository groupItemRepository, IL
         context.SetReceiveTimeout(ReceiveTimeout);
     }
 
-    private Task OnItem(IContext context, Item item)
+    private async Task OnBatch(IContext context, Batch batch)
     {
-        if (_handledItems.Add(item.Id))
-        {
-            _persistableItems.Add(item);
-        }
+        // this log is to show that, when we don't have local affinity enabled, and the Kafka keys are not well defined,
+        // the messages are still sent to the same actor instance, because the group id is the same
+        logger.LogInformation("Received batch from {Sender}", context.Sender?.ToDiagnosticString());
         
-        context.Respond(Ack);
+        var items = batch.Items
+            .Where(i => _handledItems.Add(i.Id))
+            .Select(i => new GroupItem(_groupId, Guid.Parse(i.Id), i.Stuff))
+            .ToArray();
 
-        return Task.CompletedTask;
-    }
-    
-    private async Task OnPersist(IContext context)
-    {
-        if (_persistableItems.Count > 0)
+        if (items.Length > 0)
         {
             await groupItemRepository.SaveProgressAsync(
                 new Group(_groupId),
-                _persistableItems.Select(
-                    i => new GroupItem(_groupId, Guid.Parse(i.Id), i.Stuff)),
+                items,
                 context.CancellationToken);
-
-            _persistableItems.Clear();
         }
 
         context.Respond(Ack);

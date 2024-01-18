@@ -1,6 +1,6 @@
 using Akka.Actor;
 using Akka.Hosting;
-using AkkaDotNetSimplified;
+using AkkaDotNet;
 using Shared.Persistence;
 
 /*
@@ -18,7 +18,7 @@ builder.Services.AddSingleton<MongoGroupItemRepository>();
 builder.Services.AddSingleton<IGroupItemRepository>(s => s.GetRequiredService<MongoGroupItemRepository>());
 builder.Services.AddHostedService<DatabaseInitializerHostedService>();
 builder.Services.AddAkka(
-    "AkkaDotNetSimplified",
+    "AkkaDotNetSample",
     b =>
     {
         b.WithActors((system, registry) =>

@@ -1,7 +1,7 @@
 using Proto;
 using Proto.Cluster;
 
-namespace ProtoActorSimplifiedWithBatchingOnForwarder;
+namespace ProtoActorWithBatchingOnForwarder;
 
 public sealed class ActorSystemHostedService(ActorSystem system) : IHostedService
 {

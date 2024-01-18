@@ -3,8 +3,8 @@ version: "3"
 ## this dockerfile is just to quickly do docker compose build, and then use things in k8s
 
 services:  
-  protoactorsimplifiedwithbatchingonforwarder:
-    image: streambatchingwithactormodelsample/protoactorsimplifiedwithbatchingonforwarder:latest
+  protoactorwithbatchingonforwarder:
+    image: streambatchingwithactormodelsample/protoactorwithbatchingonforwarder:latest
     build:
       context: .
-      dockerfile: src/ProtoActorSimplifiedWithBatchingOnForwarder/Dockerfile
+      dockerfile: src/ProtoActorWithBatchingOnForwarder/Dockerfile

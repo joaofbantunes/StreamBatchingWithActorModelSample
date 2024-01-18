@@ -1,6 +1,6 @@
 syntax = "proto3";
 package messages;
-option csharp_namespace = "ProtoActorSimplified.Messages";
+option csharp_namespace = "ProtoActor.Messages";
 
 message Item {
   string GroupId = 1;

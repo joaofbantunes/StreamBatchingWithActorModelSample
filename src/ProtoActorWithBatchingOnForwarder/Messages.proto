@@ -1,6 +1,6 @@
 syntax = "proto3";
 package messages;
-option csharp_namespace = "ProtoActorSimplifiedWithBatchingOnForwarder.Messages";
+option csharp_namespace = "ProtoActorWithBatchingOnForwarder.Messages";
 
 // instead of forwarding one item to the actor at a time, we can group them in chunks 
 

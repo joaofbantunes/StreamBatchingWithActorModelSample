@@ -5,17 +5,15 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{F06098B6-73A2-4571-BBE1-92C8017F4050}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProtoActor", "src\ProtoActor\ProtoActor.csproj", "{DB4491A5-1C95-45E6-BD29-3A35743BB203}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProtoActorSimplified", "src\ProtoActorSimplified\ProtoActorSimplified.csproj", "{FD44CCF4-BB8F-48AA-B1B6-329957DDFB84}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProtoActor", "src\ProtoActor\ProtoActor.csproj", "{FD44CCF4-BB8F-48AA-B1B6-329957DDFB84}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "src\Shared\Shared.csproj", "{A3555887-271D-400A-9B14-5F1917899A8E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestPublisher", "src\TestPublisher\TestPublisher.csproj", "{90BA2CED-D6F2-416D-88CA-033CF4B31AD8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AkkaDotNetSimplified", "src\AkkaDotNetSimplified\AkkaDotNetSimplified.csproj", "{FD409D00-E34C-44B6-9499-B335D496708E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AkkaDotNet", "src\AkkaDotNet\AkkaDotNet.csproj", "{FD409D00-E34C-44B6-9499-B335D496708E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProtoActorSimplifiedWithBatchingOnForwarder", "src\ProtoActorSimplifiedWithBatchingOnForwarder\ProtoActorSimplifiedWithBatchingOnForwarder.csproj", "{3A13D726-465B-429B-A96F-D94793551677}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProtoActorWithBatchingOnForwarder", "src\ProtoActorWithBatchingOnForwarder\ProtoActorWithBatchingOnForwarder.csproj", "{3A13D726-465B-429B-A96F-D94793551677}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,10 +24,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{DB4491A5-1C95-45E6-BD29-3A35743BB203}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DB4491A5-1C95-45E6-BD29-3A35743BB203}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DB4491A5-1C95-45E6-BD29-3A35743BB203}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DB4491A5-1C95-45E6-BD29-3A35743BB203}.Release|Any CPU.Build.0 = Release|Any CPU
 		{FD44CCF4-BB8F-48AA-B1B6-329957DDFB84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FD44CCF4-BB8F-48AA-B1B6-329957DDFB84}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FD44CCF4-BB8F-48AA-B1B6-329957DDFB84}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -52,7 +46,6 @@ Global
 		{3A13D726-465B-429B-A96F-D94793551677}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{DB4491A5-1C95-45E6-BD29-3A35743BB203} = {F06098B6-73A2-4571-BBE1-92C8017F4050}
 		{FD44CCF4-BB8F-48AA-B1B6-329957DDFB84} = {F06098B6-73A2-4571-BBE1-92C8017F4050}
 		{A3555887-271D-400A-9B14-5F1917899A8E} = {F06098B6-73A2-4571-BBE1-92C8017F4050}
 		{90BA2CED-D6F2-416D-88CA-033CF4B31AD8} = {F06098B6-73A2-4571-BBE1-92C8017F4050}

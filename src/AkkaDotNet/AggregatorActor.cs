@@ -1,7 +1,7 @@
 using Akka.Actor;
 using Shared.Persistence;
 
-namespace AkkaDotNetSimplified;
+namespace AkkaDotNet;
 
 public sealed class AggregatorActor : ReceiveActor
 {

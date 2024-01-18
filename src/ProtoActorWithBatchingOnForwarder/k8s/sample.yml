@@ -33,23 +33,23 @@ subjects:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: protoactorsimplifiedwithbatchingonforwarder-deployment
+  name: protoactorwithbatchingonforwarder-deployment
   labels:
-    app: protoactorsimplifiedwithbatchingonforwarder
+    app: protoactorwithbatchingonforwarder
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: protoactorsimplifiedwithbatchingonforwarder
+      app: protoactorwithbatchingonforwarder
   template:
     metadata:
       labels:
-        app: protoactorsimplifiedwithbatchingonforwarder
+        app: protoactorwithbatchingonforwarder
     spec:
       serviceAccountName: sample-service-account-with-access-for-clustering
       containers:
-        - name: protoactorsimplifiedwithbatchingonforwarder
-          image: streambatchingwithactormodelsample/protoactorsimplifiedwithbatchingonforwarder:latest
+        - name: protoactorwithbatchingonforwarder
+          image: streambatchingwithactormodelsample/protoactorwithbatchingonforwarder:latest
           imagePullPolicy: Never
           ports:
             - containerPort: 8080
@@ -65,7 +65,7 @@ spec:
             - name: MongoDb__ConnectionString
               value: "mongodb://user:pass@mongo-svc:27017/"
             - name: MongoDb__DatabaseName
-              value: "stream-batching-proto-actor-simplified2"
+              value: "stream-batching-proto-actor-2"
             - name: Kafka__BootstrapServers
               value: "kafka-svc:9092"
             - name: RunningInKubernetes
@@ -78,11 +78,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: protoactorsimplifiedwithbatchingonforwarder-svc
+  name: protoactorwithbatchingonforwarder-svc
 spec:
   type: LoadBalancer
   selector:
-    app: protoactorsimplifiedwithbatchingonforwarder
+    app: protoactorwithbatchingonforwarder
   ports:
     - protocol: TCP
       port: 6001

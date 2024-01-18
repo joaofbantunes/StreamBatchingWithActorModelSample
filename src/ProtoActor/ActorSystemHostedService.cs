@@ -1,7 +1,7 @@
 using Proto;
 using Proto.Cluster;
 
-namespace ProtoActorSimplified;
+namespace ProtoActor;
 
 public sealed class ActorSystemHostedService(ActorSystem system) : IHostedService
 {

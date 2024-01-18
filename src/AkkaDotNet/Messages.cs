@@ -1,6 +1,6 @@
 using Akka.Actor;
 
-namespace AkkaDotNetSimplified;
+namespace AkkaDotNet;
 
 public sealed record LookupAggregator(IReadOnlyCollection<Guid> GroupIds);
 

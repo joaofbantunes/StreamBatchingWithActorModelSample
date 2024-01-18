@@ -1,7 +1,7 @@
 using Akka.Actor;
 using Akka.DependencyInjection;
 
-namespace AkkaDotNetSimplified;
+namespace AkkaDotNet;
 
 // for DI
 public readonly struct AggregatorDirectory;

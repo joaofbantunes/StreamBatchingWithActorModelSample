@@ -9,8 +9,8 @@ using Proto.Cluster.Testing;
 using Proto.DependencyInjection;
 using Proto.Remote;
 using Proto.Remote.GrpcNet;
-using ProtoActorSimplifiedWithBatchingOnForwarder.Messages;
-using ProtoActorSimplifiedWithBatchingOnForwarder;
+using ProtoActorWithBatchingOnForwarder.Messages;
+using ProtoActorWithBatchingOnForwarder;
 using Shared.Persistence;
 
 BsonDefaults.GuidRepresentationMode = GuidRepresentationMode.V3;
@@ -40,7 +40,7 @@ static ActorSystem CreateActorSystem(IServiceProvider services)
 {
     var configuration = services.GetRequiredService<IConfiguration>();
     var runningInKubernetes = configuration.GetValue<bool>("RunningInKubernetes");
-    var clusterName = "ProtoActorSimplifiedCluster";
+    var clusterName = "ProtoActorWithBatchingOnForwarderSampleCluster";
     var systemConfig = ActorSystemConfig.Setup().WithDeveloperSupervisionLogging(true);
     var system = new ActorSystem(systemConfig).WithServiceProvider(services);
     var remoteConfig = runningInKubernetes

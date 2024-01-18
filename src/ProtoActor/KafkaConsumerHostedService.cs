@@ -1,12 +1,14 @@
-using Akka.Actor;
-using Akka.Hosting;
 using Confluent.Kafka;
+using Proto;
+using Proto.Cluster;
+using ProtoActor.Messages;
 
-namespace AkkaDotNetSimplified;
+namespace ProtoActor;
 
 public sealed class KafkaConsumerHostedService(
-    IRequiredActor<AggregatorDirectory> distributor,
+    ActorSystem system,
     TimeProvider timeProvider,
+    IConfiguration configuration,
     ILogger<KafkaConsumerHostedService> logger)
     : BackgroundService
 {
@@ -22,8 +24,8 @@ public sealed class KafkaConsumerHostedService(
 
         var config = new ConsumerConfig
         {
-            BootstrapServers = "localhost:9092",
-            GroupId = "proto-actor-simplified",
+            BootstrapServers = configuration.GetSection("Kafka")["BootstrapServers"],
+            GroupId = "proto-actor",
             AutoOffsetReset = AutoOffsetReset.Earliest,
             EnableAutoCommit = false
         };
@@ -42,38 +44,31 @@ public sealed class KafkaConsumerHostedService(
 
             if (items.Count == 0)
             {
-                logger.LogDebug("No records polled from Kafka, sleeping for {TimeToSleepWhenNoRecords}",
+                logger.LogDebug(
+                    "No records polled from Kafka, sleeping for {TimeToSleepWhenNoRecords}",
                     TimeToSleepWhenNoRecords);
                 await Task.Delay(TimeToSleepWhenNoRecords, stoppingToken);
                 continue;
             }
 
             logger.LogInformation("Polled {BatchSize} records from Kafka", items.Count);
-
-            var groupedItems = items
-                .GroupBy(item => item.GroupId)
-                .ToDictionary(group => group.Key, group => group.ToArray());
-            
-            var aggregators = (await distributor.ActorRef.Ask<LookupResult>(
-                new LookupAggregator(groupedItems.Keys),
-                BatchHandlingTimeout,
-                stoppingToken)).Aggregators;
-            
             var pendingItems = items
-                .Select(item => aggregators[item.GroupId].Ask<Ack>(
+                .Select(item => system.Cluster().RequestAsync<Ack>(
+                    item.GroupId,
+                    "group-aggregator",
                     item,
-                    BatchHandlingTimeout,
-                    stoppingToken));
-            
+                    CancellationTokens.WithTimeout(BatchHandlingTimeout)));
             await Task.WhenAll(pendingItems);
 
             var groupIds = items.Select(static item => item.GroupId).Distinct().ToArray();
             logger.LogInformation("Persisting {Groups} groups", groupIds.Length);
+            var persistMessage = new Persist();
             var pendingPersists = groupIds
-                .Select(groupId => aggregators[groupId].Ask<Ack>(
-                    new Persist(groupId),
-                    BatchHandlingTimeout,
-                    stoppingToken));
+                .Select(groupId => system.Cluster().RequestAsync<Ack>(
+                    groupId,
+                    "group-aggregator",
+                    persistMessage,
+                    CancellationTokens.WithTimeout(BatchHandlingTimeout)));
             await Task.WhenAll(pendingPersists);
 
             consumer.Commit();
@@ -101,5 +96,10 @@ public sealed class KafkaConsumerHostedService(
     }
 
     private static Item Map(Shared.Messages.Item item)
-        => new(item.GroupingId, item.Id, item.Stuff);
+        => new()
+        {
+            GroupId = item.GroupingId.ToString(),
+            Id = item.Id.ToString(),
+            Stuff = item.Stuff
+        };
 }

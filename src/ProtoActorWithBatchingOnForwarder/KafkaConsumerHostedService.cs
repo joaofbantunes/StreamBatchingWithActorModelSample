@@ -1,9 +1,9 @@
 using Confluent.Kafka;
 using Proto;
 using Proto.Cluster;
-using ProtoActorSimplifiedWithBatchingOnForwarder.Messages;
+using ProtoActorWithBatchingOnForwarder.Messages;
 
-namespace ProtoActorSimplifiedWithBatchingOnForwarder;
+namespace ProtoActorWithBatchingOnForwarder;
 
 public sealed class KafkaConsumerHostedService(
     ActorSystem system,
@@ -25,7 +25,7 @@ public sealed class KafkaConsumerHostedService(
         var config = new ConsumerConfig
         {
             BootstrapServers = configuration.GetSection("Kafka")["BootstrapServers"],
-            GroupId = "proto-actor-simplified2",
+            GroupId = "proto-actor-2",
             AutoOffsetReset = AutoOffsetReset.Earliest,
             EnableAutoCommit = false
         };
