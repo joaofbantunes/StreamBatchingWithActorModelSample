@@ -10,7 +10,8 @@ public sealed class ActorSystemHostedService(ActorSystem system) : IHostedServic
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        await system.Cluster().ShutdownAsync();
-        await system.ShutdownAsync();
+        var reason = "Service shutting down";
+        await system.Cluster().ShutdownAsync(reason: reason);
+        await system.ShutdownAsync(reason: reason);
     }
 }
