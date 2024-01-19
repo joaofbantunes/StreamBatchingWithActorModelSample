@@ -18,7 +18,7 @@ public sealed class AggregatorActor(IGroupItemRepository groupItemRepository, IL
         => context.Message switch
         {
             Started _ => OnStarted(context),
-            Batch batch => OnBatch(context, batch),
+            GroupChunk chunk => OnChunk(context, chunk),
             ReceiveTimeout _ => OnReceiveTimeout(context),
             Stopping _ => OnStopping(context),
             _ => Task.CompletedTask
@@ -40,13 +40,13 @@ public sealed class AggregatorActor(IGroupItemRepository groupItemRepository, IL
         context.SetReceiveTimeout(ReceiveTimeout);
     }
 
-    private async Task OnBatch(IContext context, Batch batch)
+    private async Task OnChunk(IContext context, GroupChunk chunk)
     {
         // this log is to show that, when we don't have local affinity enabled, and the Kafka keys are not well defined,
         // the messages are still sent to the same actor instance, because the group id is the same
-        logger.LogInformation("Received batch from {Sender}", context.Sender?.ToDiagnosticString());
+        logger.LogInformation("Received chunk from {Sender}", context.Sender?.ToDiagnosticString());
         
-        var items = batch.Items
+        var items = chunk.Items
             .Where(i => _handledItems.Add(i.Id))
             .Select(i => new GroupItem(_groupId, Guid.Parse(i.Id), i.Stuff))
             .ToArray();

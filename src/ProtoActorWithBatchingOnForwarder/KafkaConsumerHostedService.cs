@@ -40,9 +40,9 @@ public sealed class KafkaConsumerHostedService(
         // TODO: handle errors
         while (!stoppingToken.IsCancellationRequested)
         {
-            var items = GetBatchFromKafka(consumer);
+            var chunks = GetBatchFromKafka(consumer);
 
-            if (items.Count == 0)
+            if (chunks.Count == 0)
             {
                 logger.LogDebug(
                     "No records polled from Kafka, sleeping for {TimeToSleepWhenNoRecords}",
@@ -51,20 +51,22 @@ public sealed class KafkaConsumerHostedService(
                 continue;
             }
             
-            logger.LogInformation("Polled {PolledItemCount} records from Kafka", items.Sum(i => i.Items.Count));
-            var pendingItems = items
-                .Select(item => system.Cluster().RequestAsync<Ack>(
-                    item.Id,
+            logger.LogInformation("Polled {PolledItemCount} records from Kafka", chunks.Sum(c => c.Items.Count));
+            
+            var pendingChunks = chunks
+                .Select(chunk => system.Cluster().RequestAsync<Ack>(
+                    chunk.GroupId,
                     "group-aggregator",
-                    item,
+                    chunk,
                     CancellationTokens.WithTimeout(BatchHandlingTimeout)));
-            await Task.WhenAll(pendingItems);
+            
+            await Task.WhenAll(pendingChunks);
 
             consumer.Commit();
         }
     }
 
-    private IReadOnlyCollection<Batch> GetBatchFromKafka(IConsumer<Guid, Shared.Messages.Item> consumer)
+    private IReadOnlyCollection<GroupChunk> GetBatchFromKafka(IConsumer<Guid, Shared.Messages.Item> consumer)
     {
         var pollingStarted = timeProvider.GetTimestamp();
         try
@@ -88,12 +90,12 @@ public sealed class KafkaConsumerHostedService(
                 .GroupBy(i => i.GroupingId)
                 .Select(g =>
                 {
-                    var batch = new Batch
+                    var chunk = new GroupChunk
                     {
-                        Id = g.Key.ToString()
+                        GroupId = g.Key.ToString()
                     };
-                    batch.Items.AddRange(g.Select(Map));
-                    return batch;
+                    chunk.Items.AddRange(g.Select(Map));
+                    return chunk;
                 }).ToArray();
         }
         finally
@@ -103,7 +105,7 @@ public sealed class KafkaConsumerHostedService(
                 timeProvider.GetElapsedTime(pollingStarted).TotalSeconds);
         }
 
-        static BatchItem Map(Shared.Messages.Item item)
+        static GroupChunk.Types.Item Map(Shared.Messages.Item item)
             => new()
             {
                 Id = item.Id.ToString(),
