@@ -68,10 +68,9 @@ static async Task CreateTopicAsync(string topicName, string bootstrapServers)
                 })
             .Build();
 
-        await adminClient.CreateTopicsAsync(new TopicSpecification[]
-        {
+        await adminClient.CreateTopicsAsync([
             new() { Name = topicName, ReplicationFactor = 1, NumPartitions = 10 }
-        });
+        ]);
     }
     catch (CreateTopicsException)
     {

@@ -1,5 +1,3 @@
-version: "3"
-
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.0
@@ -39,3 +37,24 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: user
       MONGO_INITDB_ROOT_PASSWORD: pass
+
+  lgtm:
+    image: grafana/otel-lgtm
+    hostname: lgtm
+    container_name: lgtm
+    ports:
+      - "3000:3000" # ui
+      - "4317:4317" # otlp gRPC
+      - "4318:4318" # otlp HTTP
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - 9090:8080
+    environment:
+      DYNAMIC_CONFIG_ENABLED: 'true'
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker:29092
+    depends_on:
+      - broker
