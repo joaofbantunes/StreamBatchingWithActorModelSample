@@ -1,5 +1,7 @@
 using Shared.Persistence;
 
+namespace MsOrleans;
+
 [Immutable]
 [GenerateSerializer]
 public sealed record GroupChunkItem(string Id, string Stuff);

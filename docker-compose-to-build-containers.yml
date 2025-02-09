@@ -1,5 +1,3 @@
-version: "3"
-
 ## this dockerfile is just to quickly do docker compose build, and then use things in k8s
 
 services:  
@@ -8,3 +6,8 @@ services:
     build:
       context: .
       dockerfile: src/ProtoActorWithBatchingOnForwarder/Dockerfile
+  msorleans:
+    image: streambatchingwithactormodelsample/msorleans:latest
+    build:
+      context: .
+      dockerfile: src/MsOrleans/Dockerfile

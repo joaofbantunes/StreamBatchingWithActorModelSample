@@ -1,0 +1,128 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: sample-role-with-access-for-clustering
+rules:
+# need to apply the orleans k8s clustering CRDs first
+# https://github.com/OrleansContrib/Orleans.Clustering.Kubernetes/tree/master/src/Orleans.Clustering.Kubernetes/Definitions
+  - apiGroups:
+      - orleans.dot.net
+    resources:
+      - silos
+      - clusterversions
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+    - "" 
+    resources:
+      - pods
+    verbs: 
+      - get
+      - watch
+      - list
+      - delete
+      - patch
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sample-service-account-with-access-for-clustering
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: sample-role-binding-with-access-for-clustering
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: sample-role-with-access-for-clustering
+subjects:
+  - kind: ServiceAccount
+    name: sample-service-account-with-access-for-clustering
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orleans-sample-deployment
+  labels:
+    app: orleans-sample
+    orleans/serviceId: orleans-sample
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: orleans-sample
+  template:
+    metadata:
+      labels:
+        app: orleans-sample
+        orleans/serviceId: orleans-sample
+        orleans/clusterId: orleans-sample-cluster
+    spec:
+      serviceAccountName: sample-service-account-with-access-for-clustering
+      containers:
+        - name: orleans-sample
+          image: streambatchingwithactormodelsample/msorleans:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+              name: http
+            - containerPort: 11111
+              name: silo
+            - containerPort: 30000
+              name: gateway
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          env:
+            - name: MongoDb__ConnectionString
+              value: "mongodb://user:pass@mongo-svc:27017/"
+            - name: MongoDb__DatabaseName
+              value: "stream-batching-proto-actor-2"
+            - name: Kafka__BootstrapServers
+              value: "kafka-svc:9092"
+            - name: RunningInKubernetes
+              value: "true"
+            - name: ORLEANS_SERVICE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['orleans/serviceId']
+            - name: ORLEANS_CLUSTER_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['orleans/clusterId']
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orleans-sample-svc
+spec:
+  type: LoadBalancer
+  selector:
+    app: orleans-sample
+  ports:
+    - protocol: TCP
+      port: 6001
+      targetPort: http

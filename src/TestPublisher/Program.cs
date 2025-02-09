@@ -4,8 +4,8 @@ using Confluent.Kafka.Admin;
 using Shared.Messages;
 
 var topicName = "sample-streaming-topic";
-var bootstrapServers = "localhost:9092";
-//var bootstrapServers = "localhost:9192"; // testing with local k8s cluster
+//var bootstrapServers = "localhost:9092";
+var bootstrapServers = "localhost:9192"; // testing with local k8s cluster
 
 using var producer = new ProducerBuilder<Guid, Item>(
         new ProducerConfig

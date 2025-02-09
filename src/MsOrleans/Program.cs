@@ -5,6 +5,7 @@ using MsOrleans;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Orleans.Clustering.Kubernetes;
 using Shared.Persistence;
 
 BsonDefaults.GuidRepresentationMode = GuidRepresentationMode.V3;
@@ -23,20 +24,12 @@ builder.Host.UseOrleans(siloBuilder =>
 {
     if (builder.Configuration.GetValue<bool>("RunningInKubernetes"))
     {
-        // TODO: configure for Kubernetes
-        //
-        // siloBuilder.UseKubernetesHosting()
-        //     .Configure<EndpointOptions>(options =>
-        //     {
-        //         options.AdvertisedIPAddress = IPAddress.Parse(
-        //             builder.Configuration["Orleans:AdvertisedHost"] ?? 
-        //             throw new InvalidOperationException("Orleans:AdvertisedHost not configured"));
-        //     })
-        //     .UseKubernetesClustering();
+        siloBuilder
+            .UseKubernetesHosting() // sets up the silo to use Kubernetes hosting (not clustering) - https://learn.microsoft.com/en-us/dotnet/orleans/deployment/kubernetes
+            .UseKubeMembership(); // sets up the silo to use Kubernetes clustering - https://github.com/OrleansContrib/Orleans.Clustering.Kubernetes/tree/master
     }
     else
     {
-        // Configure for local development
         siloBuilder.UseLocalhostClustering();
     }
     
@@ -46,7 +39,7 @@ builder.Host.UseOrleans(siloBuilder =>
     siloBuilder.UseDashboard(options =>
     {
         options.HostSelf = false;
-    }); 
+    });
     
     siloBuilder.AddActivityPropagation();
 });
