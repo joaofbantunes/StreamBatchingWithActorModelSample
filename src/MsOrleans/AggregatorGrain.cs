@@ -21,7 +21,7 @@ public sealed class AggregatorGrain(
     ILogger<AggregatorGrain> logger)
     : Grain, IAggregatorGrain, IDisposable
 {
-    private static readonly TimeSpan ReceiveTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan ReceiveTimeout = TimeSpan.FromMinutes(1);
 
     private IGrainTimer? _idleCheckTimer;
     private Guid _groupId;
@@ -43,7 +43,8 @@ public sealed class AggregatorGrain(
     // TODO: can we get a cancellation token here?
     public async Task HandleGroupChunkAsync(GroupChunk chunk)
     {
-        logger.LogInformation("Received chunk from {Sender}", this.GetPrimaryKeyString());
+        var senderHost = RequestContext.Get("SenderHost") as string;
+        logger.LogInformation("Received chunk in {GrainId} from server {SenderHost}", this.GetPrimaryKeyString(), senderHost);
         
         var items = chunk.Items
             .Where(i => _handledItems.Add(i.Id))

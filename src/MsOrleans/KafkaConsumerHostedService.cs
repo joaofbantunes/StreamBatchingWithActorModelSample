@@ -51,9 +51,13 @@ public sealed class KafkaConsumerHostedService(
             logger.LogInformation("Polled {PolledItemCount} records from Kafka", chunks.Sum(c => c.Items.Count));
 
             var pendingChunks = chunks
-                .Select(chunk => grainFactory
-                    .GetGrain<IAggregatorGrain>(chunk.GroupId)
-                    .HandleGroupChunkAsync(chunk));
+                .Select(chunk =>
+                {
+                    RequestContext.Set("SenderHost", Environment.MachineName);
+                    return grainFactory
+                        .GetGrain<IAggregatorGrain>(chunk.GroupId)
+                        .HandleGroupChunkAsync(chunk);
+                });
 
             await Task.WhenAll(pendingChunks);
 
