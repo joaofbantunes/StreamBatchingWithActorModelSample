@@ -49,7 +49,7 @@ builder.Services
     .ConfigureResource(r => r.AddService("OrleansSample"))
     .WithTracing(b => b
         .AddAspNetCoreInstrumentation()
-        //.AddSource("Microsoft.Orleans.Runtime")
+        //.AddSource("Microsoft.Orleans.Runtime") // may be interesting for debugging, but it's very verbose
         .AddSource("Microsoft.Orleans.Application")
         .AddOtlpExporter())
     .WithMetrics(b => b

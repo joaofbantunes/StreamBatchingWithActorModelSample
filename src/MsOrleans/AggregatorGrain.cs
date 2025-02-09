@@ -44,7 +44,7 @@ public sealed class AggregatorGrain(
     public async Task HandleGroupChunkAsync(GroupChunk chunk)
     {
         var senderHost = RequestContext.Get("SenderHost") as string;
-        logger.LogInformation("Received chunk in {GrainId} from server {SenderHost}", this.GetPrimaryKeyString(), senderHost);
+        logger.LogInformation("Received chunk in {GrainId} from server {SenderHost}", GrainContext.GrainId, senderHost);
         
         var items = chunk.Items
             .Where(i => _handledItems.Add(i.Id))
